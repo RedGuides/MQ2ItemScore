@@ -1,30 +1,30 @@
 /********************************************************************************
 ****
-**		MQ2ItemScore.cpp : Rewrite for 2017
+**      MQ2ItemScore.cpp : Rewrite for 2017
 **
 ****
 *********************************************************************************
 ****
-**		This plugin will provide fast item comparisons based on a total score
+**      This plugin will provide fast item comparisons based on a total score
 **      which is adjustable by class. There are 18 attributes that can be used
 **      to calculate the total score [ hp, mana, ac, etc ]
 **
-**		/iScore 			; shows basic status
-**	    /iScore AC 10 		; scores AC as 10:1
+**      /iScore 			; shows basic status
+**      /iScore AC 10 		; scores AC as 10:1
 **      /iScore HP 1 		; scores HP as 1:1
 **      /iScore hSTA 15     ; scores HeroicSTA at 15:1
 **
 ****
 *********************************************************************************
 ****
-**	   2019-02-17 - Name change to MQ2ItemScore
-**			- Bug fix for ${DisplayItem}
-**		    - Added evaluation of Luck
+**     2019-02-17 - Name change to MQ2ItemScore
+**          - Bug fix for ${DisplayItem}
+**          - Added evaluation of Luck
 **     2019-02-20 - Major bug fixes.
-**			- Found how to find the 'luck' from link with out opening it.
-**			- Added spam timer to links so we don't re-evaluate the same one over and over
+**          - Found how to find the 'luck' from link with out opening it.
+**          - Added spam timer to links so we don't re-evaluate the same one over and over
 **     2019-03-14 - Added 'click channel' option
-**			- Modified 'click' options to include yes,no,1,0
+**          - Modified 'click' options to include yes,no,1,0
 **          - Made signifcant changes to help and reporting
 **     2019-08-01 - Fixed problem with Evaluate & debug mode using strcpy_s and overwritting data
 **     2019-08-06 - Another fix to Evaluate in debug mode.
@@ -33,14 +33,14 @@
 *********************************************************************************/
 
 
-#include <mq/plugin.h>
+#include <mq/Plugin.h>
 
 PreSetup("MQ2ItemScore");
 
 char  Version[] = "Version 3.16 - Aug 6th 2019";
 
 #pragma warning(disable: 4244) // possible loss of data
-//#pragma warning(disable: 4996) // string safe stuff. 
+//#pragma warning(disable: 4996) // string safe stuff.
 
 #define TIME unsigned long long
 
@@ -58,7 +58,7 @@ int   BestSlot = 0;
 float BestScore = 0;
 float CurrScore = 0;
 float CurrSlot = 0;
-int   LinkState = 0;	// 0 = idle, 1 = link requested, 2 = DisplayItem valid - process 
+int   LinkState = 0;    // 0 = idle, 1 = link requested, 2 = DisplayItem valid - process
 TIME  LinkTimer = 0;
 int   LinkTimeout = 30000;
 int   WearingItem = 0;
@@ -102,7 +102,7 @@ typedef struct
 	char  Slots[250];
 	char  Type[25];
 	int   AugType;
-	int	  Lore;
+	int   Lore;
 	int   Luck;
 	float Score;
 	float Attrib[AttribMax];
@@ -113,8 +113,8 @@ typedef struct
 } trITEM_ATTRIB;
 
 trITEM_ATTRIB* ItemDB = NULL;
-int			   ItemDB_Loaded = 0;
-char		   ItemDB_Header[MAX_STRING] = "";
+int            ItemDB_Loaded = 0;
+char           ItemDB_Header[MAX_STRING] = "";
 
 trITEM_ATTRIB  LinkedItem;
 trITEM_ATTRIB  WornItem;
@@ -129,35 +129,35 @@ typedef struct
 } tSLOTINFO;
 
 tSLOTINFO SlotInfo[] = {
-	/* 00 | 0x000001 */{ 1			,"Charm"		,"WAR",	"Warrior" },
-	/* 01 | 0x000002 */{ 2			,"Left Ear"		,"CLR",	"Cleric" },
-	/* 02 | 0x000004 */{ 4			,"Head"			,"PAL", "Paladin" },
-	/* 03 | 0x000008 */{ 8			,"Face"			,"RNG", "Ranger" },
-	/* 04 | 0x000010 */{ 16			,"Right Ear"	,"SHD", "Shadow Knight" },
-	/* 05 | 0x000020 */{ 32			,"Neck"			,"DRU", "Druid" },
-	/* 06 | 0x000040 */{ 64			,"Shoulders"	,"MNK",	"Monk" },
-	/* 07 | 0x000080 */{ 128		,"Arms"			,"BRD", "Bard" },
-	/* 08 | 0x000100 */{ 256		,"Back"			,"ROG", "Rogue" },
-	/* 09 | 0x000200 */{ 512		,"Left Wrist"	,"SHM", "Shaman" },
-	/* 10 | 0x000401 */{ 1024		,"Right Wrist"  ,"NEC", "Necromancer" },
-	/* 11 | 0x000800 */{ 2048		,"Range"		,"WIZ", "Wizard" },
-	/* 12 | 0x001000 */{ 4096		,"Hands"		,"MAG", "Magician" },
-	/* 13 | 0x002000 */{ 8192		,"Primary"		,"ENC", "Enchanter" },
-	/* 14 | 0x004000 */{ 16384		,"Secondary"	,"BST", "Beastlord" },
-	/* 15 | 0x008000 */{ 32768		,"Left Finger"	,"BER", "Berserker" },
-	/* 16 | 0x010000 */{ 65536		,"Right Finger" },
-	/* 17 | 0x020000 */{ 131072		,"Chest"		},
-	/* 18 | 0x040000 */{ 262144		,"Legs"			},
-	/* 19 | 0x080000 */{ 524288		,"Feet"			},
-	/* 20 | 0x100000 */{ 1048576	,"Waist"		},
-	/* 21 | 0x200000 */{ 2097152	,"Power Source" },
-	/* 22 | 0x400000 */{ 4194304	,"Ammo"			},
-	/* 23 | 0x800000 */{ 0			,NULL			} };
+	/* 00 | 0x000001 */{ 1          ,"Charm"        ,"WAR", "Warrior" },
+	/* 01 | 0x000002 */{ 2          ,"Left Ear"     ,"CLR", "Cleric" },
+	/* 02 | 0x000004 */{ 4          ,"Head"         ,"PAL", "Paladin" },
+	/* 03 | 0x000008 */{ 8          ,"Face"         ,"RNG", "Ranger" },
+	/* 04 | 0x000010 */{ 16         ,"Right Ear"    ,"SHD", "Shadow Knight" },
+	/* 05 | 0x000020 */{ 32         ,"Neck"         ,"DRU", "Druid" },
+	/* 06 | 0x000040 */{ 64         ,"Shoulders"    ,"MNK", "Monk" },
+	/* 07 | 0x000080 */{ 128        ,"Arms"         ,"BRD", "Bard" },
+	/* 08 | 0x000100 */{ 256        ,"Back"         ,"ROG", "Rogue" },
+	/* 09 | 0x000200 */{ 512        ,"Left Wrist"   ,"SHM", "Shaman" },
+	/* 10 | 0x000401 */{ 1024       ,"Right Wrist"  ,"NEC", "Necromancer" },
+	/* 11 | 0x000800 */{ 2048       ,"Range"        ,"WIZ", "Wizard" },
+	/* 12 | 0x001000 */{ 4096       ,"Hands"        ,"MAG", "Magician" },
+	/* 13 | 0x002000 */{ 8192       ,"Primary"      ,"ENC", "Enchanter" },
+	/* 14 | 0x004000 */{ 16384      ,"Secondary"    ,"BST", "Beastlord" },
+	/* 15 | 0x008000 */{ 32768      ,"Left Finger"  ,"BER", "Berserker" },
+	/* 16 | 0x010000 */{ 65536      ,"Right Finger" },
+	/* 17 | 0x020000 */{ 131072     ,"Chest"        },
+	/* 18 | 0x040000 */{ 262144     ,"Legs"         },
+	/* 19 | 0x080000 */{ 524288     ,"Feet"         },
+	/* 20 | 0x100000 */{ 1048576    ,"Waist"        },
+	/* 21 | 0x200000 */{ 2097152    ,"Power Source" },
+	/* 22 | 0x400000 */{ 4194304    ,"Ammo"         },
+	/* 23 | 0x800000 */{ 0          ,NULL           } };
 
 #define SLOT_MAX 23
 #define CLASS_MAX 16
 
-void DoTest(void)
+void DoTest()
 {
 	//EzCommand("/timed 10 /ds loaddb");
 	//EzCommand("/timed 20 /ds load");
@@ -167,7 +167,7 @@ void DoTest(void)
 	EzCommand("/timed 100 /plugin MQ2ItemScore unload");
 }
 
-void DoWelcomeText(void)
+void DoWelcomeText()
 {
 	char buf[MAX_STRING];
 	sprintf_s(buf, "\agMQ2ItemScore\aw by \ayDewey2461\aw %s  Type /iScore help for command list.", Version);
@@ -176,12 +176,12 @@ void DoWelcomeText(void)
 
 
 
-// *************************************************************************** 
-//	Load external data 
-// *************************************************************************** 
+// ***************************************************************************
+//  Load external data
+// ***************************************************************************
 void PrintItem(trITEM_ATTRIB* Src);
 
-void ClearDB(void)
+void ClearDB()
 {
 	trITEM_ATTRIB* p, * q;
 	if (ItemDB_Loaded) {
@@ -198,7 +198,7 @@ void ClearDB(void)
 }
 
 // We should not be cashing things becaue we lose the 'luck' and 'lore' stats
-void SaveCache(void)
+void SaveCache()
 {
 	char  FileName[MAX_STRING];
 	sprintf_s(FileName, "%s", INIFileName);
@@ -275,19 +275,19 @@ void LoadDB(int FileID, char* PostFix)
 		Item.FileID = FileID;
 
 		char* s, * t;
-		s = strtok_s(S, "\t", &t);		if (s) strcpy_s(Item.Name, s);
-		s = strtok_s(NULL, "\t", &t);		if (s) strcpy_s(Item.Class, s);
-		s = strtok_s(NULL, "\t", &t);		if (s) strcpy_s(Item.Slots, s);
-		s = strtok_s(NULL, "\t", &t);		if (s) strcpy_s(Item.Type, s);
-		s = strtok_s(NULL, "\t", &t);		if (s) Item.AugType = atoi(s);
+		s = strtok_s(S, "\t", &t);          if (s) strcpy_s(Item.Name, s);
+		s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Class, s);
+		s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Slots, s);
+		s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Type, s);
+		s = strtok_s(NULL, "\t", &t);       if (s) Item.AugType = atoi(s);
 
 		for (i = 0; i < AttribMax; i++) {
-			s = strtok_s(NULL, "\t", &t);	if (s) Item.Attrib[i] = atoi(s);
+			s = strtok_s(NULL, "\t", &t);   if (s) Item.Attrib[i] = atoi(s);
 		}
 
-		s = strtok_s(NULL, "\t", &t);		if (s) Item.Lore = atoi(s);
-		//s = strtok_s(NULL, "\t", &t);		if (s) Item.Luck = atoi(s);
-		//s = strtok_s(NULL, "\t", &t);		if (s) strcpy_s(Item.Link, s);
+		s = strtok_s(NULL, "\t", &t);       if (s) Item.Lore = atoi(s);
+		//s = strtok_s(NULL, "\t", &t);       if (s) Item.Luck = atoi(s);
+		//s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Link, s);
 
 		if (_stricmp(Item.Slots, "EAR") == 0) strcpy_s(Item.Slots, "LEFT EAR|RIGHT EAR|");
 		if (_stricmp(Item.Slots, "WRIST") == 0) strcpy_s(Item.Slots, "LEFT WRIST|RIGHT WRIST|");
@@ -340,7 +340,7 @@ void PrintDBSatus()
 }
 
 
-void LoadDBS(void)
+void LoadDBS()
 {
 	// Clear DB if it was loaded
 	ClearDB();
@@ -418,9 +418,9 @@ int AddItemToCache(trITEM_ATTRIB* Item)
 	return 1;
 }
 
-// *************************************************************************** 
-//	To Evaluate or Not to Evaluate that is the question... I choose to EVAL for easy development
-// *************************************************************************** 
+// ***************************************************************************
+//  To Evaluate or Not to Evaluate that is the question... I choose to EVAL for easy development
+// ***************************************************************************
 
 
 float Evaluate(char* zOutput, char* zFormat, ...) {
@@ -434,9 +434,9 @@ float Evaluate(char* zOutput, char* zFormat, ...) {
 	if (gszLastNormalError[0] || gszLastSyntaxError[0] || gszLastMQ2DataError[0]) {
 		char szBuff[MAX_STRING];
 		vsprintf_s(szBuff, MAX_STRING, zFormat, vaList);
-		if (gszLastNormalError[0])	WriteChatf("MQ2ItemScore Error:[%s] on Evaluate[%s] = [%s]", gszLastNormalError, szBuff, szTemp);
-		if (gszLastSyntaxError[0])	WriteChatf("MQ2ItemScore Error:[%s] on Evaluate[%s] = [%s]", gszLastSyntaxError, szBuff, szTemp);
-		if (gszLastMQ2DataError[0])	WriteChatf("MQ2ItemScore Error:[%s] on Evaluate[%s] = [%s]", gszLastMQ2DataError, szBuff, szTemp);
+		if (gszLastNormalError[0])  WriteChatf("MQ2ItemScore Error:[%s] on Evaluate[%s] = [%s]", gszLastNormalError, szBuff, szTemp);
+		if (gszLastSyntaxError[0])  WriteChatf("MQ2ItemScore Error:[%s] on Evaluate[%s] = [%s]", gszLastSyntaxError, szBuff, szTemp);
+		if (gszLastMQ2DataError[0]) WriteChatf("MQ2ItemScore Error:[%s] on Evaluate[%s] = [%s]", gszLastMQ2DataError, szBuff, szTemp);
 		gszLastNormalError[0] = gszLastSyntaxError[0] = gszLastMQ2DataError[0] = 0;
 	}
 	if (DebugMode > 29) {
@@ -453,9 +453,9 @@ float Evaluate(char* zOutput, char* zFormat, ...) {
 	return (atof(szTemp));
 }
 
-// *************************************************************************** 
-//	This section is methods to interact with the AttributeList 
-// *************************************************************************** 
+// ***************************************************************************
+//  This section is methods to interact with the AttributeList
+// ***************************************************************************
 
 int  SetAttribListWeight(char* Key, char* Val)
 {
@@ -472,7 +472,7 @@ int  SetAttribListWeight(char* Key, char* Val)
 	return 0;
 }
 
-void ClearAttribListWeights(void)
+void ClearAttribListWeights()
 {
 	int i;
 	for (i = 0; i < AttribMax; i++)
@@ -490,7 +490,7 @@ void PrintItem(trITEM_ATTRIB* Src)
 	WriteChatf("   Luck=%d", Src->Luck);
 	WriteChatf("   Score=%0.0f", Src->Score);
 	if (DebugMode > 2) {
-		for (int i = 0; i < AttribMax; i++)	WriteChatf("   %s %0.0f", AttribList[i].Name, Src->Attrib[i]);
+		for (int i = 0; i < AttribMax; i++) WriteChatf("   %s %0.0f", AttribList[i].Name, Src->Attrib[i]);
 	}
 	//if (DebugMode > 3) 	WriteChatf("   Link=%s", Src->Link);
 
@@ -597,7 +597,7 @@ void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
 	}
 	ToUpper(Dest->Slots);
 
-	// Now see if we want to over ride the score 
+	// Now see if we want to over ride the score
 	char  szClass[MAX_STRING];
 	Evaluate(szClass, "${Me.Class.ShortName}");
 	GetPrivateProfileString(szClass, Dest->Name, "0", szVal, 256, INIFileName);
@@ -607,7 +607,7 @@ void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
 }
 
 
-// If the "LinkedItem" is one of the templates then replace it with the class item 
+// If the "LinkedItem" is one of the templates then replace it with the class item
 void DoTemplateMatching(char* ClassName)
 {
 	trITEM_ATTRIB* p, * q;
@@ -630,7 +630,7 @@ void DoTemplateMatching(char* ClassName)
 		return;
 	}
 
-	// we have a match lets go find it. 
+	// we have a match lets go find it.
 
 	char szStr[MAX_STRING];
 	char szTmp[MAX_STRING];
@@ -662,9 +662,9 @@ void DoTemplateMatching(char* ClassName)
 }
 
 
-// *************************************************************************** 
-//	This section is to set, save, and report global profile variables. 
-// *************************************************************************** 
+// ***************************************************************************
+//  This section is to set, save, and report global profile variables.
+// ***************************************************************************
 
 void LoadAttribListWeights(int Echo)
 {
@@ -715,10 +715,10 @@ void ReadProfile(int Echo)
 	char szVal[MAX_STRING];
 	GetPrivateProfileString("Global", "Report", "None", ReportChannel, 256, INIFileName);
 	GetPrivateProfileString("Global", "ClickChannel", "", ClickChannel, 256, INIFileName);
-	GetPrivateProfileString("Global", "ClickGroup", "0", szVal, 256, INIFileName);	ClickGroup = atoi(szVal);
-	GetPrivateProfileString("Global", "ClickGuild", "0", szVal, 256, INIFileName);	ClickGuild = atoi(szVal);
-	GetPrivateProfileString("Global", "ClickRaid", "0", szVal, 256, INIFileName);	ClickRaid = atoi(szVal);
-	GetPrivateProfileString("Global", "ClickAny", "0", szVal, 256, INIFileName);	ClickAny = atoi(szVal);
+	GetPrivateProfileString("Global", "ClickGroup", "0", szVal, 256, INIFileName);  ClickGroup = atoi(szVal);
+	GetPrivateProfileString("Global", "ClickGuild", "0", szVal, 256, INIFileName);  ClickGuild = atoi(szVal);
+	GetPrivateProfileString("Global", "ClickRaid", "0", szVal, 256, INIFileName);   ClickRaid = atoi(szVal);
+	GetPrivateProfileString("Global", "ClickAny", "0", szVal, 256, INIFileName);    ClickAny = atoi(szVal);
 	LoadAttribListWeights(Echo);
 	IniLoaded = 1;
 }
@@ -729,10 +729,10 @@ void WriteProfile(int Echo)
 
 	WritePrivateProfileString("Global", "Report", ReportChannel, INIFileName);
 	WritePrivateProfileString("Global", "ClickChannel", ClickChannel, INIFileName);
-	sprintf_s(szKey, "%d", ClickGroup);	WritePrivateProfileString("Global", "ClickGroup", szKey, INIFileName);
-	sprintf_s(szKey, "%d", ClickGuild);	WritePrivateProfileString("Global", "ClickGuild", szKey, INIFileName);
-	sprintf_s(szKey, "%d", ClickRaid);	WritePrivateProfileString("Global", "ClickRaid", szKey, INIFileName);
-	sprintf_s(szKey, "%d", ClickAny);	WritePrivateProfileString("Global", "ClickAny", szKey, INIFileName);
+	sprintf_s(szKey, "%d", ClickGroup); WritePrivateProfileString("Global", "ClickGroup", szKey, INIFileName);
+	sprintf_s(szKey, "%d", ClickGuild); WritePrivateProfileString("Global", "ClickGuild", szKey, INIFileName);
+	sprintf_s(szKey, "%d", ClickRaid);  WritePrivateProfileString("Global", "ClickRaid", szKey, INIFileName);
+	sprintf_s(szKey, "%d", ClickAny);   WritePrivateProfileString("Global", "ClickAny", szKey, INIFileName);
 	SaveAttribListWeights(Echo);
 }
 
@@ -783,11 +783,11 @@ void EchoCommands(int Echo)
 	EchoProfile(TRUE, FALSE, TRUE);
 }
 
-// *************************************************************************** 
-//	This section is for each of the user commands. 
-// *************************************************************************** 
+// ***************************************************************************
+//  This section is for each of the user commands.
+// ***************************************************************************
 
-void DoScoreForCursor(void);
+void DoScoreForCursor();
 
 void SetReportChannel(char* Val)
 {
@@ -823,7 +823,7 @@ void SetDebugMode(char* Val)
 	WriteChatf("MQ2ItemScore::DebugMode=%d", DebugMode);
 }
 
-void SetAsBestItem(void)
+void SetAsBestItem()
 {
 	char szStr[MAX_STRING];
 	char szClass[MAX_STRING];
@@ -841,9 +841,9 @@ void SetAsBestItem(void)
 
 
 
-// *************************************************************************** 
-//	This is the actual entry point for user commands. Parse and divy up the work.
-// *************************************************************************** 
+// ***************************************************************************
+//  This is the actual entry point for user commands. Parse and divy up the work.
+// ***************************************************************************
 
 void DoItemScoreUserCommand(PSPAWNINFO pChar, PCHAR szLine)
 {
@@ -857,21 +857,21 @@ void DoItemScoreUserCommand(PSPAWNINFO pChar, PCHAR szLine)
 	GetArg(Val, szLine, 2);
 	GetArg(Opt, szLine, 3);
 
-	if (_stricmp(Key, "save") == 0) { WriteProfile(TRUE);			return; }
-	if (_stricmp(Key, "load") == 0) { ReadProfile(TRUE);			return; }
-	if (_stricmp(Key, "loaddb") == 0) { LoadDBS();					return; }
-	if (_stricmp(Key, "report") == 0) { SetReportChannel(Val);		return; }
-	if (_stricmp(Key, "click") == 0) { SetClickMode(Val, Opt);		return; }
-	if (_stricmp(Key, "clear") == 0) { ClearProfile(TRUE);			return; }
-	if (_stricmp(Key, "help") == 0) { EchoHelp(TRUE);				return; }
-	if (_stricmp(Key, "debug") == 0) { SetDebugMode(Val);			return; }
-	if (_stricmp(Key, "best") == 0) { SetAsBestItem();			return; }
-	if (Key[0] == 0) { DoScoreForCursor();			return; }
+	if (_stricmp(Key, "save") == 0) { WriteProfile(TRUE);           return; }
+	if (_stricmp(Key, "load") == 0) { ReadProfile(TRUE);            return; }
+	if (_stricmp(Key, "loaddb") == 0) { LoadDBS();                  return; }
+	if (_stricmp(Key, "report") == 0) { SetReportChannel(Val);      return; }
+	if (_stricmp(Key, "click") == 0) { SetClickMode(Val, Opt);      return; }
+	if (_stricmp(Key, "clear") == 0) { ClearProfile(TRUE);          return; }
+	if (_stricmp(Key, "help") == 0) { EchoHelp(TRUE);               return; }
+	if (_stricmp(Key, "debug") == 0) { SetDebugMode(Val);           return; }
+	if (_stricmp(Key, "best") == 0) { SetAsBestItem();              return; }
+	if (Key[0] == 0) { DoScoreForCursor();                          return; }
 	SetAttribListWeight(Key, Val);
 }
 
 
-void CompareLinkVsWornItem(void)
+void CompareLinkVsWornItem()
 {
 	// Input is a valid LinkedItem vs WornItem
 	// Skip checks if we have "Nothing" in slot
@@ -888,7 +888,7 @@ void CompareLinkVsWornItem(void)
 		WornItem.Score = 1;
 	}
 	else {
-		if (LinkedItem.AugType != WornItem.AugType) return;		// Filter out aug vs armor
+		if (LinkedItem.AugType != WornItem.AugType) return;    // Filter out aug vs armor
 	}
 
 	if (_stricmp(LinkedItem.Name, WornItem.Name) == 0) {
@@ -924,11 +924,11 @@ void EvaluateWornItems(char* Class)
 	ReportBestStr[0] = 0;
 	int Primary = Evaluate(szTmp, "${Me.Inventory[13].Type}");
 
-	// We're wearing everything here so cheat and pass in the Class and Slot info to save CPU cycles. 
+	// We're wearing everything here so cheat and pass in the Class and Slot info to save CPU cycles.
 	for (i = 0; i < BAG_SLOT_START - 1; i++)
 	{
 		if (LinkedItem.AugType == 0) {
-			if (!(i == 14 && Primary == 2)) {			// Skip shield upgrade if I'm using a 2h
+			if (!(i == 14 && Primary == 2)) {        // Skip shield upgrade if I'm using a 2h
 				sprintf_s(szStr, "Me.Inventory[%d]", i);
 				SetItemByTLO(&WornItem, szStr, Class, SlotInfo[i].SlotName);
 				CompareLinkVsWornItem();
@@ -980,7 +980,7 @@ void ReportUpgrade(int FromLink)
 	else
 		sprintf_s(szVerb, "MOVE ");
 
-	// -- Same item but better luck 
+	// -- Same item but better luck
 	if (UpgradeLuckyItem) {
 		sprintf_s(szStr, "MQ2ItemScore: \ay%s\aw has better luck.", LinkedItem.Name);
 		if (ReportChannel[0] == '/')
@@ -1026,7 +1026,7 @@ void ReportUpgrade(int FromLink)
 }
 
 
-void EvaluateLuckLore(void)
+void EvaluateLuckLore()
 {
 	char szStr[MAX_STRING];
 	if (WearingItem && LinkedItem.Lore) {
@@ -1038,7 +1038,7 @@ void EvaluateLuckLore(void)
 
 void DoItemScore(int FromLink)
 {
-	// At this point LinkedItem is the item we are going to compare 
+	// At this point LinkedItem is the item we are going to compare
 	// PrintItem(&LinkedItem);
 	//WriteChatColor("DoItemScore()");
 
@@ -1051,7 +1051,7 @@ void DoItemScore(int FromLink)
 
 	if (DebugMode > 1) PrintItem(&LinkedItem);
 
-	// Check to see if we are the right class. 
+	// Check to see if we are the right class.
 	if (strstr(LinkedItem.Class, ClassName) == 0 && _stricmp(LinkedItem.Class, "ALL") != 0) {
 		if (DebugMode > 1) WriteChatColor("Item Unusable due to class restriction");
 		return;
@@ -1063,7 +1063,7 @@ void DoItemScore(int FromLink)
 	ReportUpgrade(FromLink);
 }
 
-void DoScoreForCursor(void)
+void DoScoreForCursor()
 {
 	char szStr[MAX_STRING];
 
@@ -1092,7 +1092,7 @@ PLUGIN_API VOID InitializePlugin(VOID)
 {
 	DoWelcomeText();
 
-	// Remove the stuff in core 
+	// Remove the stuff in core
 
 	RemoveCommand("/iScore");
 	RemoveCommand("/ItemScore");
@@ -1100,7 +1100,7 @@ PLUGIN_API VOID InitializePlugin(VOID)
 	// Add our version back in
 	AddCommand("/iscore", DoItemScoreUserCommand);
 
-	if (gGameState == GAMESTATE_INGAME)	ReadProfile(FALSE);
+	if (gGameState == GAMESTATE_INGAME) ReadProfile(FALSE);
 	LoadDBS();
 
 	//DoTest();
@@ -1109,8 +1109,8 @@ PLUGIN_API VOID InitializePlugin(VOID)
 
 PLUGIN_API VOID SetGameState(DWORD GameState)
 {
-	if (GameState == GAMESTATE_INGAME && IniLoaded == 0)	ReadProfile(FALSE);
-	if (GameState != GAMESTATE_INGAME && IniLoaded == 1)	IniLoaded = 0;
+	if (GameState == GAMESTATE_INGAME && IniLoaded == 0)    ReadProfile(FALSE);
+	if (GameState != GAMESTATE_INGAME && IniLoaded == 1)    IniLoaded = 0;
 }
 
 
@@ -1170,7 +1170,7 @@ PLUGIN_API DWORD OnIncomingChat(PCHAR Line, DWORD Color)
 			WriteChatf("MQ2ItemScore::Link[81] = %c", p[81 + 2]);  // This is correct
 			WriteChatf("MQ2ItemScore::Link[82] = %c", p[82 + 2]);
 
-#endif 
+#endif
 
 			//WriteChatf("MQ2ItemScore::LinkItemName = [%s]", LinkedItem.Name);
 
@@ -1223,10 +1223,10 @@ PLUGIN_API DWORD OnIncomingChat(PCHAR Line, DWORD Color)
 			LinkTimer = GetTickCount64() + 200;
 
 			//WriteChatf("OnIncomingChat::Cmd = %s",Line);
-			//for (i=0; Line[i]; i++)	WriteChatf("Line[%d] = 0x%02X = %c ",i,Line[i],Line[i]);
+			//for (i=0; Line[i]; i++)   WriteChatf("Line[%d] = 0x%02X = %c ",i,Line[i],Line[i]);
 
 			//WriteChatf("OnIncomingChat::Cmd = %s",szCommand);
-			//for (i=0; szText[i]; i++)	WriteChatf("szText[%d] = 0x%02X = %c ",i,szText[i],szText[i]);
+			//for (i=0; szText[i]; i++) WriteChatf("szText[%d] = 0x%02X = %c ",i,szText[i],szText[i]);
 
 
 		}
@@ -1239,7 +1239,7 @@ PLUGIN_API VOID OnPulse(VOID)
 {
 	if (gGameState != GAMESTATE_INGAME) return;
 
-	// We have requested an item link. 
+	// We have requested an item link.
 	if (LinkState == 1 && LinkTimer < GetTickCount64())
 	{
 		char szKey[MAX_STRING];
