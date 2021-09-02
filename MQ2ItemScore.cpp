@@ -36,11 +36,9 @@
 #include <mq/Plugin.h>
 
 PreSetup("MQ2ItemScore");
+PLUGIN_VERSION(3.16);
 
 char  Version[] = "Version 3.16 - Aug 6th 2019";
-
-#pragma warning(disable: 4244) // possible loss of data
-//#pragma warning(disable: 4996) // string safe stuff.
 
 #define TIME unsigned long long
 
@@ -279,13 +277,13 @@ void LoadDB(int FileID, char* PostFix)
 		s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Class, s);
 		s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Slots, s);
 		s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Type, s);
-		s = strtok_s(NULL, "\t", &t);       if (s) Item.AugType = atoi(s);
+		s = strtok_s(NULL, "\t", &t);       if (s) Item.AugType = GetIntFromString(s, 0);
 
 		for (i = 0; i < AttribMax; i++) {
-			s = strtok_s(NULL, "\t", &t);   if (s) Item.Attrib[i] = atoi(s);
+			s = strtok_s(NULL, "\t", &t);   if (s) Item.Attrib[i] = GetFloatFromString(s, 0);
 		}
 
-		s = strtok_s(NULL, "\t", &t);       if (s) Item.Lore = atoi(s);
+		s = strtok_s(NULL, "\t", &t);       if (s) Item.Lore = GetIntFromString(s, 0);
 		//s = strtok_s(NULL, "\t", &t);       if (s) Item.Luck = atoi(s);
 		//s = strtok_s(NULL, "\t", &t);       if (s) strcpy_s(Item.Link, s);
 
@@ -450,7 +448,7 @@ float Evaluate(char* zOutput, char* zFormat, ...) {
 	if (_stricmp(szTemp, "NULL") == 0) return 0;
 	if (_stricmp(szTemp, "FALSE") == 0) return 0;
 	if (_stricmp(szTemp, "TRUE") == 0) return 1;
-	return (atof(szTemp));
+	return GetFloatFromString(szTemp, 0);
 }
 
 // ***************************************************************************
@@ -465,7 +463,7 @@ int  SetAttribListWeight(char* Key, char* Val)
 		if (_stricmp(AttribList[i].Name, Key) == 0)
 		{
 			WriteChatf("MQ2ItemScore::Setting %s to %s", AttribList[i].Name, Val);
-			AttribList[i].Weight = atof(Val);
+			AttribList[i].Weight = GetFloatFromString(Val, 0);
 			return 1;
 		}
 	}
@@ -544,12 +542,12 @@ void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
 	if (Evaluate(szKey, "${%s.Lore}", szTLO)) Dest->Lore = 1;
 	if (Evaluate(szKey, "${%s.LoreEquipped}", szTLO)) Dest->Lore = 1;
 
-	Dest->Luck = Evaluate(szKey, "${%s.Luck}", szTLO);
+	Dest->Luck = static_cast<int>(Evaluate(szKey, "${%s.Luck}", szTLO));
 
 	Dest->Score = 0;
 	Dest->Slots[0] = 0;
 	Dest->Class[0] = 0;
-	Dest->AugType = Evaluate(szKey, "${%s.AugType}", szTLO);
+	Dest->AugType = static_cast<int>(Evaluate(szKey, "${%s.AugType}", szTLO));
 
 	for (int i = 0; i < AttribMax; i++)
 	{
@@ -563,7 +561,7 @@ void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
 	}
 	else
 	{
-		int Max = Evaluate(szKey, "${%s.Classes}", szTLO);
+		int Max = static_cast<int>(Evaluate(szKey, "${%s.Classes}", szTLO));
 		int j = 1;
 		for (int i = 0; i < Max; i++)
 		{
@@ -587,10 +585,10 @@ void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
 	}
 	else
 	{
-		int WornSlots = Evaluate(szKey, "${%s.WornSlots}", szTLO);
+		int WornSlots = static_cast<int>(Evaluate(szKey, "${%s.WornSlots}", szTLO));
 		for (int i = 0; i < WornSlots; i++)
 		{
-			int j = Evaluate(szKey, "${%s.WornSlot[%d]}", szTLO, i + 1);
+			int j = static_cast<int>(Evaluate(szKey, "${%s.WornSlot[%d]}", szTLO, i + 1));
 			strcat_s(Dest->Slots, SlotInfo[j].SlotName);
 			strcat_s(Dest->Slots, "|");
 		}
@@ -601,7 +599,7 @@ void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
 	char  szClass[MAX_STRING];
 	Evaluate(szClass, "${Me.Class.ShortName}");
 	GetPrivateProfileString(szClass, Dest->Name, "0", szVal, 256, INIFileName);
-	if (szVal[0] != '0') Dest->Score = atof(szVal);
+	if (szVal[0] != '0') Dest->Score = GetFloatFromString(szVal, 0);
 
 	//PrintItem(Dest);
 }
@@ -676,7 +674,7 @@ void LoadAttribListWeights(int Echo)
 	for (i = 0; i < AttribMax; i++)
 	{
 		GetPrivateProfileString(szClass, AttribList[i].Name, "0", szVal, 256, INIFileName);
-		AttribList[i].Weight = atof(szVal);
+		AttribList[i].Weight = GetFloatFromString(szVal, 0);
 	}
 	if (Echo) WriteChatf("MQ2ItemScore::reading attributes for [%s]", szClass);
 
@@ -922,7 +920,7 @@ void EvaluateWornItems(char* Class)
 	UpgradeLuckyItem = 0;
 
 	ReportBestStr[0] = 0;
-	int Primary = Evaluate(szTmp, "${Me.Inventory[13].Type}");
+	int Primary = static_cast<int>(Evaluate(szTmp, "${Me.Inventory[13].Type}"));
 
 	// We're wearing everything here so cheat and pass in the Class and Slot info to save CPU cycles.
 	for (i = 0; i < BAG_SLOT_START - 1; i++)
@@ -938,7 +936,7 @@ void EvaluateWornItems(char* Class)
 		else {
 			for (int j = 1; j < 6; j++)
 			{
-				int AugType = Evaluate(szTmp, "${Me.Inventory[%d].AugSlot%d}", i, j);
+				int AugType = static_cast<int>(Evaluate(szTmp, "${Me.Inventory[%d].AugSlot%d}", i, j));
 				//WriteChatf("Item.AugType = %d vs AugType %d", AugType, LinkedItem.AugType);
 				if (AugType > 0 && (SlotInfo[AugType - 1].SlotMask & LinkedItem.AugType)) {
 					sprintf_s(szStr, "Me.Inventory[%d].Item[%d]", i, j);
@@ -997,7 +995,7 @@ void ReportUpgrade(int FromLink)
 
 	for (i = 0; i < AttribMax; i++)
 	{
-		d = (LinkedItem.Attrib[i] - WorstWornItem.Attrib[i]);
+		d = static_cast<int>(LinkedItem.Attrib[i] - WorstWornItem.Attrib[i]);
 		if (AttribList[i].Weight != 0 && d != 0)
 		{
 			sprintf_s(szTmp, " %+0d %s ", d, AttribList[i].Name);
@@ -1031,7 +1029,7 @@ void EvaluateLuckLore()
 	char szStr[MAX_STRING];
 	if (WearingItem && LinkedItem.Lore) {
 		memcpy(&WorstWornItem, &LinkedItem, sizeof(trITEM_ATTRIB));
-		WorstWornItem.Luck = Evaluate(szStr, "${FindItem[=%s].Luck}", LinkedItem.Name);
+		WorstWornItem.Luck = static_cast<int>(Evaluate(szStr, "${FindItem[=%s].Luck}", LinkedItem.Name));
 		if (DebugMode > 2) WriteChatf("FindItemCheck:Found Item: WornLuck = %d   LinkLuck = %d", WorstWornItem.Luck, LinkedItem.Luck);
 	}
 }
