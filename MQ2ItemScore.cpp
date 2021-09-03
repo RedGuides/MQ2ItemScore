@@ -1086,7 +1086,7 @@ void DoScoreForCursor()
 ******************************************************************/
 
 // Called once, when the plugin is to initialize
-PLUGIN_API VOID InitializePlugin(VOID)
+PLUGIN_API void InitializePlugin()
 {
 	DoWelcomeText();
 
@@ -1105,7 +1105,7 @@ PLUGIN_API VOID InitializePlugin(VOID)
 
 }
 
-PLUGIN_API VOID SetGameState(DWORD GameState)
+PLUGIN_API void SetGameState(int GameState)
 {
 	if (GameState == GAMESTATE_INGAME && IniLoaded == 0)    ReadProfile(FALSE);
 	if (GameState != GAMESTATE_INGAME && IniLoaded == 1)    IniLoaded = 0;
@@ -1113,7 +1113,7 @@ PLUGIN_API VOID SetGameState(DWORD GameState)
 
 
 // Called once, when the plugin is to shutdown
-PLUGIN_API VOID ShutdownPlugin(VOID)
+PLUGIN_API void ShutdownPlugin()
 {
 	ClearDB();
 	RemoveCommand("/iScore");
@@ -1121,18 +1121,17 @@ PLUGIN_API VOID ShutdownPlugin(VOID)
 
 
 
-PLUGIN_API DWORD OnIncomingChat(PCHAR Line, DWORD Color)
+PLUGIN_API int OnIncomingChat(const char* Line, int Color)
 {
 	if (ClickGroup || ClickRaid || ClickGuild || ClickAny || ClickChannel[0] != 0)
 	{
 		char szText[MAX_STRING];
 		char szStart[MAX_STRING];
 		char szCommand[MAX_STRING];
-		char* p, * q, * v;
 		int  doLink = 0;
 
 		sprintf_s(szStart, "%c%c", 0x12, 0x30);
-		p = strstr(Line, szStart);
+		const char* p = strstr(Line, szStart);
 		if (!p) return 0;
 
 		if (ClickAny) doLink = 1;
@@ -1146,8 +1145,8 @@ PLUGIN_API DWORD OnIncomingChat(PCHAR Line, DWORD Color)
 			ClearItem(&LinkedItem);
 
 			// Get the name
-			q = p + 2 + LINK_LEN;
-			v = LinkedItem.Name;
+			const char* q = p + 2 + LINK_LEN;
+			char* v = LinkedItem.Name;
 			while (*q && *q != 0x12)
 				*v++ = *q++;
 			*v = 0;
@@ -1233,7 +1232,7 @@ PLUGIN_API DWORD OnIncomingChat(PCHAR Line, DWORD Color)
 }
 
 // This is called every time MQ pulses
-PLUGIN_API VOID OnPulse(VOID)
+PLUGIN_API void OnPulse()
 {
 	if (gGameState != GAMESTATE_INGAME) return;
 
