@@ -1090,12 +1090,6 @@ PLUGIN_API void InitializePlugin()
 {
 	DoWelcomeText();
 
-	// Remove the stuff in core
-
-	RemoveCommand("/iScore");
-	RemoveCommand("/ItemScore");
-
-	// Add our version back in
 	AddCommand("/iscore", DoItemScoreUserCommand);
 
 	if (gGameState == GAMESTATE_INGAME) ReadProfile(FALSE);
@@ -1116,7 +1110,7 @@ PLUGIN_API void SetGameState(int GameState)
 PLUGIN_API void ShutdownPlugin()
 {
 	ClearDB();
-	RemoveCommand("/iScore");
+	RemoveCommand("/iscore");
 }
 
 
@@ -1234,7 +1228,8 @@ PLUGIN_API int OnIncomingChat(const char* Line, int Color)
 // This is called every time MQ pulses
 PLUGIN_API void OnPulse()
 {
-	if (gGameState != GAMESTATE_INGAME) return;
+	if (GetGameState() != GAMESTATE_INGAME)
+		return;
 
 	// We have requested an item link.
 	if (LinkState == 1 && LinkTimer < GetTickCount64())
