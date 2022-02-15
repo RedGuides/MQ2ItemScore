@@ -200,7 +200,7 @@ void SaveCache()
 {
 	char  FileName[MAX_STRING];
 	sprintf_s(FileName, "%s", INIFileName);
-	int l = strlen(FileName);
+	int l = (int)strlen(FileName);
 	if (l > 4) FileName[l - 4] = 0;
 	strcat_s(FileName, "Cache.txt");
 	FILE* fp;
@@ -248,7 +248,7 @@ void LoadDB(int FileID, char* PostFix)
 	// Figure out the DB file name and open it
 	char  FileName[MAX_STRING];
 	sprintf_s(FileName, "%s", INIFileName);
-	int l = strlen(FileName);
+	int l = (int)strlen(FileName);
 	if (l > 4) FileName[l - 4] = 0;
 	strcat_s(FileName, PostFix);
 	errno_t error = fopen_s(&fp, FileName, "r");
@@ -633,7 +633,7 @@ void DoTemplateMatching(char* ClassName)
 	char szStr[MAX_STRING];
 	char szTmp[MAX_STRING];
 	szStr[0] = szTmp[0] = 0;
-	int l = strlen(q->Type);
+	int l = (int)strlen(q->Type);
 
 	while (p)
 	{
