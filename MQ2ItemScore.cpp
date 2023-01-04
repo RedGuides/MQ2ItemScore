@@ -203,8 +203,7 @@ void SaveCache()
 	int l = (int)strlen(FileName);
 	if (l > 4) FileName[l - 4] = 0;
 	strcat_s(FileName, "Cache.txt");
-	FILE* fp;
-	fopen_s(&fp, FileName, "w");
+	FILE* fp = _fsopen(FileName, "w", _SH_DENYWR);
 
 	if (!fp) {
 		WriteChatf("MQ2ItemScore::SaveCache [ %s ] Failed to write file.", FileName);
@@ -251,9 +250,9 @@ void LoadDB(int FileID, char* PostFix)
 	int l = (int)strlen(FileName);
 	if (l > 4) FileName[l - 4] = 0;
 	strcat_s(FileName, PostFix);
-	errno_t error = fopen_s(&fp, FileName, "r");
+	fp = _fsopen(FileName, "r", _SH_DENYNO);
 
-	if (error) {
+	if (!fp) {
 		WriteChatf("MQ2ItemScore::LoadDB Failed to open file [%s]", FileName);
 		return;
 	}
