@@ -794,6 +794,7 @@ void SetReportChannel(char* Val)
 
 int SetClickMode(int Val, char* Opt)
 {
+	// TODO:: Check validity of the !Val return
 	if (!Opt) return !Val;
 	if (Opt[0]) return !Val;
 	if (_stricmp(Opt, "YES") == 0) return 1;
@@ -806,6 +807,7 @@ int SetClickMode(int Val, char* Opt)
 void SetClickMode(char* Val, char* Opt)
 {
 	if (_stricmp(Val, "Channel") == 0) strcpy_s(ClickChannel, Opt);
+	// TODO: Check the Validity of the !Clicky___
 	if (_stricmp(Val, "Group") == 0) ClickGroup = !ClickGroup;
 	if (_stricmp(Val, "Guild") == 0) ClickGuild = !ClickGuild;
 	if (_stricmp(Val, "Raid") == 0) ClickRaid = !ClickRaid;
@@ -842,7 +844,7 @@ void SetAsBestItem()
 //  This is the actual entry point for user commands. Parse and divy up the work.
 // ***************************************************************************
 
-void DoItemScoreUserCommand(PSPAWNINFO pChar, PCHAR szLine)
+void DoItemScoreUserCommand(PlayerClient* pChar, const char* szLine)
 {
 	CHAR Key[MAX_STRING] = { 0 };
 	CHAR Val[MAX_STRING] = { 0 };
@@ -1204,10 +1206,10 @@ PLUGIN_API int OnIncomingChat(const char* Line, int Color)
 			memset(szText, 0, 100);
 			strncpy_s(szText, p + 2, LINK_LEN);
 			sprintf_s(szCommand, "/notify ChatWindow CW_ChatOutput link %s", szText);
-			DoCommand(((PSPAWNINFO)pCharSpawn), szCommand);
+			DoCommand(szCommand);
 
 			sprintf_s(szCommand, "/timed 10 /keypress ESC");
-			DoCommand(((PSPAWNINFO)pCharSpawn), szCommand);
+			DoCommand(szCommand);
 
 			LinkState = 1;
 			LinkTimer = GetTickCount64() + 200;
