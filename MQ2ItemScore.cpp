@@ -66,11 +66,11 @@ int   UpgradeLuckyItem = 0;
 
 #define  AttribMax  18
 
-typedef struct
+struct trATR
 {
-	char* Name;
+	const char* Name;
 	float Weight;
-} trATR;
+};
 
 trATR    AttribList[] = {
 	/* 00 */{ "AC",0 },
@@ -93,7 +93,7 @@ trATR    AttribList[] = {
 	/* 17 */{ "Ratio",0 }
 };
 
-typedef struct
+struct trITEM_ATTRIB
 {
 	char  Name[ITEM_NAME_LEN];
 	char  Class[100];
@@ -108,7 +108,7 @@ typedef struct
 	int   FileID;
 	//char  Link[200];
 	TIME  TM;
-} trITEM_ATTRIB;
+};
 
 trITEM_ATTRIB* ItemDB = NULL;
 int            ItemDB_Loaded = 0;
@@ -121,9 +121,9 @@ trITEM_ATTRIB  WorstWornItem;
 typedef struct
 {
 	DWORD SlotMask;
-	char* SlotName;
-	char* ClassShortName;
-	char* ClassName;
+	const char* SlotName;
+	const char* ClassShortName;
+	const char* ClassName;
 } tSLOTINFO;
 
 tSLOTINFO SlotInfo[] = {
@@ -150,7 +150,7 @@ tSLOTINFO SlotInfo[] = {
 	/* 20 | 0x100000 */{ 1048576    ,"Waist"        },
 	/* 21 | 0x200000 */{ 2097152    ,"Power Source" },
 	/* 22 | 0x400000 */{ 4194304    ,"Ammo"         },
-	/* 23 | 0x800000 */{ 0          ,NULL           } };
+	/* 23 | 0x800000 */{ 0          ,nullptr        } };
 
 #define SLOT_MAX 23
 #define CLASS_MAX 16
@@ -235,7 +235,7 @@ void SaveCache()
 }
 
 
-void LoadDB(int FileID, char* PostFix)
+void LoadDB(int FileID, const char* PostFix)
 {
 	trITEM_ATTRIB* p, * q;
 	trITEM_ATTRIB   Item;
@@ -420,7 +420,7 @@ int AddItemToCache(trITEM_ATTRIB* Item)
 // ***************************************************************************
 
 
-float Evaluate(char* zOutput, char* zFormat, ...) {
+float Evaluate(char* zOutput, const char* zFormat, ...) {
 	va_list vaList;
 	va_start(vaList, zFormat);
 	char szTemp[MAX_STRING];
@@ -505,7 +505,7 @@ void ToUpper(char* p)
 	while (*p++ = toupper(*p));
 }
 
-void SetItemByTLO(trITEM_ATTRIB* Dest, char szTLO[], char* Class, char* Slot)
+void SetItemByTLO(trITEM_ATTRIB* Dest, const char* szTLO, const char* Class, const char* Slot)
 {
 	char szKey[MAX_STRING];
 	char szVal[MAX_STRING];
